@@ -68,7 +68,7 @@ class CSVMMAPDataset(Dataset):
     def __init__(self, csv_fp: str, npy_fp: str):
         self.labels = load_labels(csv_fp)
         self.total_len = len(self.labels)
-        self.data = np.memmap(npy_fp, dtype=np.float32, mode="r", shape=(self.total_len, 3, 299, 299))
+        self.data = np.memmap(npy_fp, dtype=np.float32, mode="c", shape=(self.total_len, 3, 299, 299))
 
     def __len__(self):
         return self.total_len
