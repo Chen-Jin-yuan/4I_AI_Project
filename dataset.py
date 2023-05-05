@@ -79,9 +79,10 @@ class CSVMMAPDataset(Dataset):
 
 class CSVDataModule(LightningDataModule):
     """DataModule on CSV labelled npy dataset"""
-    dataset: Dataset
+    dataset: CSVMMAPDataset
     batch_size: int
     seed: int
+    label_count: Dict[int, int]
     train: Optional[Dataset]
     val: Optional[Dataset]
     test: Optional[Dataset]
@@ -91,14 +92,20 @@ class CSVDataModule(LightningDataModule):
         self.batch_size = batch_size
         self.seed = seed
         self.dataset = CSVMMAPDataset(csv_fp, npy_fp)
+        self.label_count = label_count(self.dataset.labels)
         self.train, self.val, self.test = None, None, None
 
     def setup(self, stage: str) -> None:
         if self.train is not None:
             return
 
-        self.train, self.val, self.test = random_split(self.dataset, [0.8, 0.1, 0.1],
-                                                       generator=torch.Generator().manual_seed(self.seed))
+        train, val, test = random_split(self.dataset, [0.8, 0.1, 0.1],
+                                        generator=torch.Generator().manual_seed(self.seed))
+        train.label_count = self.label_count
+        val.label_count = self.label_count
+        test.label_count = self.label_count
+
+        self.train, self.val, self.test = train, val, test
 
     def train_dataloader(self):
         # REMARK better not to use parallel data loading to avoid high memory usage
@@ -112,16 +119,14 @@ class CSVDataModule(LightningDataModule):
         return DataLoader(self.test, batch_size=self.batch_size)
 
 
-def dataset_meta(csv_fp: str):
+def label_count(labels: Dict[int, int]) -> Dict[int, int]:
     """
     Get counts of each category in the dataset
 
-    :param csv_fp: csv label file path
+    :param labels: dict of labels
     :return: dict of category counts
     """
-    meta = dict()
-    with open(csv_fp, mode="r") as f:
-        reader = csv.reader(f)
-        for _, cat in reader:
-            meta[cat] = meta.get(cat, 0) + 1
-    return meta
+    d = dict()
+    for _, cat in labels.items():
+        d[cat] = d.get(cat, 0) + 1
+    return d
