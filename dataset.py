@@ -87,10 +87,13 @@ class CSVDataModule(LightningDataModule):
     val: Optional[Dataset]
     test: Optional[Dataset]
 
-    def __init__(self, csv_fp: str, npy_fp: str, batch_size: int, seed: int = 42):
+    def __init__(self, csv_fp: str = "data/argument.csv", npy_fp: str = "data/argument.npy", batch_size: int = 16,
+                 seed: int = 42):
         super().__init__()
         self.batch_size = batch_size
         self.seed = seed
+        self.save_hyperparameters()
+
         self.dataset = CSVMMAPDataset(csv_fp, npy_fp)
         self.label_count = label_count(self.dataset.labels)
         self.train, self.val, self.test = None, None, None
