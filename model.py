@@ -1,13 +1,15 @@
-import pytorch_lightning as pl
-import torch.nn as nn
-import torch
-import torchvision
 import os
-from torchmetrics import Accuracy
+
+import pytorch_lightning as pl
+import torch
+import torch.nn as nn
+import torchvision
+from torchmetrics import Accuracy, CohenKappa
+
 
 # 定义 lightning 模型
 class Inception_V3(pl.LightningModule):
-    def __init__(self, data_len_list = [1,1,1], lr = 0.001, model_path = None):
+    def __init__(self, data_len_list=[1, 1, 1], lr=0.001, model_path=None):
         super().__init__()
         self.num_classes = 3
         self.lr = lr
@@ -20,12 +22,17 @@ class Inception_V3(pl.LightningModule):
         weights = []
         maxSize = max(data_len_list)
         for curSize in data_len_list:
-            weights.append(maxSize/curSize)
+            weights.append(maxSize / curSize)
         class_weights = torch.FloatTensor(weights)
         self.loss_fn = nn.CrossEntropyLoss(weight=class_weights)
 
         # 计算准确率
-        self.accuracy = Accuracy(task='multiclass', num_classes=3)
+        self.train_acc = Accuracy(task='multiclass', num_classes=3)
+        self.train_k = CohenKappa(task='multiclass', num_classes=3)
+        self.val_acc = Accuracy(task='multiclass', num_classes=3)
+        self.val_k = CohenKappa(task='multiclass', num_classes=3)
+        self.test_acc = Accuracy(task='multiclass', num_classes=3)
+        self.test_k = CohenKappa(task='multiclass', num_classes=3)
 
         # 加载模型
         if model_path != None:
@@ -52,10 +59,16 @@ class Inception_V3(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat, _ = self(x) # 对于Inception_v3，self(x)返回一个InceptionOutputs对象，是二元组
+        y_hat, _ = self(x)  # 对于Inception_v3，self(x)返回一个InceptionOutputs对象，是二元组
         loss = self.loss_fn(y_hat, y)
 
+        preds = torch.argmax(y_hat, dim=1)
+        self.train_acc(preds, y)
+        self.train_k(preds, y)
+
         self.log("train_loss", loss, prog_bar=True)
+        self.log("train_acc", self.train_acc, prog_bar=True, on_step=True, on_epoch=False)
+        self.log("train_k", self.train_k, prog_bar=True, on_step=True, on_epoch=False)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -64,10 +77,12 @@ class Inception_V3(pl.LightningModule):
         loss = self.loss_fn(y_hat, y)
 
         preds = torch.argmax(y_hat, dim=1)
-        acc = self.accuracy(preds, y)
+        self.val_acc(preds, y)
+        self.val_k(preds, y)
 
         self.log("val_loss", loss, prog_bar=True)
-        self.log("val_acc", acc, prog_bar=True)
+        self.log("val_acc", self.val_acc, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("val_k", self.val_k, prog_bar=True, on_step=False, on_epoch=True)
 
         return loss
 
@@ -77,10 +92,13 @@ class Inception_V3(pl.LightningModule):
         loss = self.loss_fn(y_hat, y)
 
         preds = torch.argmax(y_hat, dim=1)
-        acc = self.accuracy(preds, y)
+        self.test_acc(preds, y)
+        self.test_k(preds, y)
 
         self.log("val_loss", loss, prog_bar=True)
-        self.log("val_acc", acc, prog_bar=True)
+        self.log("val_acc", self.test_acc, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("val_k", self.test_k, prog_bar=True, on_step=False, on_epoch=True)
+
         return loss
 
     def configure_optimizers(self):
