@@ -120,7 +120,7 @@ class Inception_V3(pl.LightningModule):
 
     def configure_optimizers(self):
         # 定义优化器
-        return torch.optim.SGD(self.parameters(), lr=self.lr)
+        return torch.optim.Adam(self.parameters(), lr=self.lr)
 
     def save_model(self, model_path):
         # 保存整个网络及参数
