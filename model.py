@@ -21,7 +21,7 @@ class Inception_V3(pl.LightningModule):
         self.val_k = CohenKappa(task='multiclass', weights='quadratic', num_classes=self.num_classes)
 
         # 加载预训练模型
-        self.model = torchvision.models.inception_v3(weights=torchvision.models.Inception_V3_Weights)
+        self.model = torchvision.models.inception_v3(weights=torchvision.models.Inception_V3_Weights.IMAGENET1K_V1)
 
         # # 如果要冻结参数
         # for param in model.parameters():
@@ -91,7 +91,3 @@ class Inception_V3(pl.LightningModule):
         self.log("val_k", self.val_k, prog_bar=True, on_step=False, on_epoch=True)
 
         return loss
-
-    def save_model(self, model_path):
-        # 保存整个网络及参数
-        torch.save(self.model, model_path)
