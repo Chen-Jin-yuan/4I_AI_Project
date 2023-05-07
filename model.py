@@ -19,11 +19,11 @@ class Inception_V3(pl.LightningModule):
 
         # 计算准确率
         self.train_acc = Accuracy(task='multiclass', num_classes=self.num_classes)
-        self.train_k = CohenKappa(task='multiclass', num_classes=self.num_classes)
+        self.train_k = CohenKappa(task='multiclass', weights='quadratic', num_classes=self.num_classes)
         self.val_acc = Accuracy(task='multiclass', num_classes=self.num_classes)
-        self.val_k = CohenKappa(task='multiclass', num_classes=self.num_classes)
+        self.val_k = CohenKappa(task='multiclass', weights='quadratic', num_classes=self.num_classes)
         self.test_acc = Accuracy(task='multiclass', num_classes=self.num_classes)
-        self.test_k = CohenKappa(task='multiclass', num_classes=self.num_classes)
+        self.test_k = CohenKappa(task='multiclass', weights='quadratic', num_classes=self.num_classes)
 
         # 加载模型
         if model_path != None:
