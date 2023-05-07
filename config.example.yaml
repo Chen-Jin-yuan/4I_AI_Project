@@ -39,8 +39,6 @@ trainer:
   sync_batchnorm: false
   reload_dataloaders_every_n_epochs: 0
   default_root_dir: null
-model:
-  lr: 0.0001
 data:
   train_csv: data/argument.csv
   train_npy: data/argument.npy
@@ -48,4 +46,8 @@ data:
   val_npy: data/val_split.npy
   batch_size: 16
   seed: 42
+optimizer:
+  class_path: torch.optim.Adam
+  init_args:
+    lr: 0.0001
 ckpt_path: null

@@ -7,10 +7,9 @@ from torchmetrics import Accuracy, CohenKappa
 
 # 定义 lightning 模型
 class Inception_V3(pl.LightningModule):
-    def __init__(self, lr=0.001):
+    def __init__(self):
         super().__init__()
         self.num_classes = 3
-        self.lr = lr
         self.save_hyperparameters()
 
         self.class_weights = dict()  # Loss function is lazily initialized
@@ -92,10 +91,6 @@ class Inception_V3(pl.LightningModule):
         self.log("val_k", self.val_k, prog_bar=True, on_step=False, on_epoch=True)
 
         return loss
-
-    def configure_optimizers(self):
-        # 定义优化器
-        return torch.optim.Adam(self.parameters(), lr=self.lr)
 
     def save_model(self, model_path):
         # 保存整个网络及参数
