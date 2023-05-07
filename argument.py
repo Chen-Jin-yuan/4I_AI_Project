@@ -51,7 +51,7 @@ def argument(src_csv_fp: str, src_root: str, dst_csv_fp: str, dst_root: str, fac
     :param src_root: source folder
     :param dst_csv_fp: destination csv file path
     :param dst_root: destination folder
-    :param factor: data augmentation factor
+    :param factors: data augmentation factor
     """
     if factors is None:
         factors = [10, 5, 1]
@@ -62,7 +62,7 @@ def argument(src_csv_fp: str, src_root: str, dst_csv_fp: str, dst_root: str, fac
     if not os.path.exists(dst_root):
         os.mkdir(dst_root)
 
-    labels = load_labels(src_csv_fp, to_int=False)  # first load labels from csv file
+    labels = load_labels(src_csv_fp)  # first load labels from csv file
     with open(dst_csv_fp, mode="w", newline="") as f2:
         writer = csv.writer(f2)
         writer.writerow(["image name", "image quality level"])
@@ -72,9 +72,7 @@ def argument(src_csv_fp: str, src_root: str, dst_csv_fp: str, dst_root: str, fac
             zip(repeat((x, label), factors[label]),  # file index
                 # Whether to apply transform: we ensure there's at least one original image in the final dataset
                 [False] + [True] * (factors[label] - 1))
-            for x, label in labels.items())
-        # Whether to apply transform: we ensure there's at least one original image in the final dataset
-        print("nop")
+            for x, label in labels)
 
         with mp.Pool() as pool:
             f_ = partial(fn, transform, src_root, dst_root)
@@ -84,8 +82,7 @@ def argument(src_csv_fp: str, src_root: str, dst_csv_fp: str, dst_root: str, fac
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("src_csv_fp", type=str, nargs="?",
-                        default="data/2. Groundtruths/a. DRAC2022_ Image Quality Assessment_Training Labels.csv",
+    parser.add_argument("src_csv_fp", type=str, nargs="?", default="data/train_split.csv",
                         help="csv file containing image file path and label")
     parser.add_argument("src_root", type=str, nargs="?", default="data/1. Original Images/a. Training Set",
                         help="folder containing images")

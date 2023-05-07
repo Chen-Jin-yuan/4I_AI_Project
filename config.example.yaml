@@ -41,10 +41,11 @@ trainer:
   default_root_dir: null
 model:
   lr: 0.0001
-  model_path: null
 data:
-  csv_fp: data/argument.csv
-  npy_fp: data/argument.npy
+  train_csv: data/argument.csv
+  train_npy: data/argument.npy
+  val_csv: data/val_split.csv
+  val_npy: data/val_split.npy
   batch_size: 16
   seed: 42
 ckpt_path: null

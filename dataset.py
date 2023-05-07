@@ -1,11 +1,11 @@
 import csv
-from typing import Optional, Dict
+from typing import Optional, Dict, List, Tuple
 
 import numpy as np
 import numpy.lib.format as npfmt
 import torch
 from pytorch_lightning.core import LightningDataModule
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader
 
 
 class DummyDataset(Dataset):
@@ -20,6 +20,7 @@ class DummyDataset(Dataset):
     def __getitem__(self, idx):
         return self.data[idx], self.labels[idx]
 
+
 class DummyDataModule(LightningDataModule):
     def __init__(self, batch_size):
         super().__init__()
@@ -33,7 +34,7 @@ class DummyDataModule(LightningDataModule):
 
     def train_dataloader(self):
         # 创建训练集的DataLoader
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers = 8)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=8)
 
     def val_dataloader(self):
         # 创建验证集的DataLoader
@@ -44,22 +45,18 @@ class DummyDataModule(LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=8)
 
 
-def load_labels(csv_fp: str, to_int: bool = True) -> dict:
+def load_labels(csv_fp: str) -> List[Tuple[str, int]]:
     """
     Load labels from csv file
 
     :param csv_fp: csv label file path
-    :param to_int: whether to convert image id to int
     :return: dict of labels
     """
     with open(csv_fp, mode="r") as f:
         reader = csv.reader(f)
         _ = next(reader)  # skip header
         # Note that file extension is removed
-        if to_int:
-            return {int(row[0][:-4]): int(row[1]) for row in reader}
-        else:
-            return {row[0]: int(row[1]) for row in reader}
+        return [(row[0], int(row[1])) for row in reader]
 
 
 class CSVMMAPDataset(Dataset):
@@ -67,7 +64,7 @@ class CSVMMAPDataset(Dataset):
     MMAP accessed numpy dataset with csv label file
     """
     data: np.memmap
-    labels: Dict[int, int]
+    labels: List[Tuple[str, int]]
     total_len: int
 
     def __init__(self, csv_fp: str, npy_fp: str):
@@ -79,12 +76,17 @@ class CSVMMAPDataset(Dataset):
         return self.total_len
 
     def __getitem__(self, item):
-        return self.data[item], self.labels[item]
+        return self.data[item], self.labels[item][1]
 
 
 class CSVDataModule(LightningDataModule):
     """DataModule on CSV labelled npy dataset"""
-    dataset: CSVMMAPDataset
+    train_dataset: Optional[CSVMMAPDataset]
+    val_dataset: Optional[CSVMMAPDataset]
+    train_csv: str
+    val_csv: str
+    train_npy: str
+    val_npy: str
     batch_size: int
     seed: int
     label_count: Dict[int, int]
@@ -92,42 +94,39 @@ class CSVDataModule(LightningDataModule):
     val: Optional[Dataset]
     test: Optional[Dataset]
 
-    def __init__(self, csv_fp: str = "data/argument.csv", npy_fp: str = "data/argument.npy", batch_size: int = 16,
+    def __init__(self, train_csv: str = "data/argument.csv", train_npy: str = "data/argument.npy",
+                 val_csv: str = "data/val_split.csv", val_npy: str = "data/val_split.npy",
+                 batch_size: int = 16,
                  seed: int = 42):
         super().__init__()
         self.batch_size = batch_size
         self.seed = seed
         self.save_hyperparameters()
 
-        self.dataset = CSVMMAPDataset(csv_fp, npy_fp)
-        self.label_count = label_count(self.dataset.labels)
-        self.train, self.val, self.test = None, None, None
+        self.train_csv, self.train_npy = train_csv, train_npy
+        self.val_csv, self.val_npy = val_csv, val_npy
+
+        self.train_dataset, self.val_dataset = None, None
 
     def setup(self, stage: str) -> None:
-        if self.train is not None:
+        if self.train_dataset is not None:
             return
 
-        train, val, test = random_split(self.dataset, [0.8, 0.1, 0.1],
-                                        generator=torch.Generator().manual_seed(self.seed))
-        train.label_count = self.label_count
-        val.label_count = self.label_count
-        test.label_count = self.label_count
-
-        self.train, self.val, self.test = train, val, test
+        self.train_dataset = CSVMMAPDataset(self.train_csv, self.train_npy)
+        self.train_dataset.label_count = label_count(self.train_dataset.labels)
+        self.val_dataset = CSVMMAPDataset(self.val_csv, self.val_npy)
+        self.val_dataset.label_count = label_count(self.val_dataset.labels)
 
     def train_dataloader(self):
         # REMARK better not to use parallel data loading to avoid high memory usage
         # Also not of much use since data is mmaped
-        return DataLoader(self.train, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val, batch_size=self.batch_size)
-
-    def test_dataloader(self):
-        return DataLoader(self.test, batch_size=self.batch_size)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size)
 
 
-def label_count(labels: Dict[int, int]) -> Dict[int, int]:
+def label_count(labels: List[Tuple[str, int]]) -> Dict[int, int]:
     """
     Get counts of each category in the dataset
 
@@ -135,6 +134,6 @@ def label_count(labels: Dict[int, int]) -> Dict[int, int]:
     :return: dict of category counts
     """
     d = dict()
-    for _, cat in labels.items():
+    for _, cat in labels:
         d[cat] = d.get(cat, 0) + 1
     return d
