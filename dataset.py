@@ -113,7 +113,7 @@ class CSVDataModule(LightningDataModule):
     def train_dataloader(self):
         # REMARK better not to use parallel data loading to avoid high memory usage
         # Also not of much use since data is mmaped
-        return DataLoader(self.train, batch_size=self.batch_size)
+        return DataLoader(self.train, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
         return DataLoader(self.val, batch_size=self.batch_size)
