@@ -26,6 +26,9 @@ def prepare(src_root: str, npy_fp: str):
     """
     transform = load_transform()
 
+    if os.path.exists(npy_fp):
+        os.remove(npy_fp)
+
     fps = list(os.listdir(src_root))
     # Create mmap file to save data
     f: np.memmap = npfmt.open_memmap(npy_fp, dtype=np.float32, mode="w+", shape=(len(fps), 3, 299, 299))
@@ -44,7 +47,7 @@ def prepare(src_root: str, npy_fp: str):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("src_root", type=str, nargs="?", default="data/argument", help="folder containing images")
-    parser.add_argument("npy_fp", type=str, nargs="?", default="data/prepared.npy", help="npy file to save")
+    parser.add_argument("npy_fp", type=str, nargs="?", default="data/argument.npy", help="npy file to save")
     args = parser.parse_args()
     prepare(args.src_root, args.npy_fp)
 
