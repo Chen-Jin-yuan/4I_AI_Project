@@ -15,7 +15,11 @@ from dataset import load_labels
 
 def argument_transform():
     return transforms.Compose([
-        transforms.TrivialAugmentWide(),
+        transforms.RandomAutocontrast(),
+        transforms.RandomAdjustSharpness(1.2),
+        transforms.RandomAdjustSharpness(0.8),
+        transforms.RandomEqualize(),
+        transforms.ColorJitter(0.2, 0.2, 0.2),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Grayscale()  # must be grayscale
@@ -88,7 +92,7 @@ def main():
                         help="folder containing images")
     parser.add_argument("dst_csv_fp", type=str, nargs="?", default="data/argument.csv", help="csv file to save")
     parser.add_argument("dst_root", type=str, nargs="?", default="data/argument", help="folder to save images")
-    parser.add_argument("--factors", type=lambda s: [int(item) for item in s.split(',')], default="10,5,1",
+    parser.add_argument("--factors", type=lambda s: [int(item) for item in s.split(',')], default="10,5,2",
                         help="argumentation factors")
     args = parser.parse_args()
     argument(args.src_csv_fp, args.src_root, args.dst_csv_fp, args.dst_root, args.factors)
