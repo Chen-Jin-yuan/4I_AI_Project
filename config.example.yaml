@@ -7,7 +7,14 @@ trainer:
   num_nodes: 1
   precision: 32-true
   logger: null
-  callbacks: null
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.ModelCheckpoint
+      init_args:
+        filename: "{epoch}-{step}-{val_k:.2f}"
+        save_top_k: 3
+        mode: max
+        save_last: true
+        monitor: val_k
   max_epochs: 100
   min_epochs: null
   max_steps: -1
