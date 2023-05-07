@@ -44,18 +44,22 @@ class DummyDataModule(LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=8)
 
 
-def load_labels(csv_fp: str) -> Dict[int, int]:
+def load_labels(csv_fp: str, to_int: bool = True) -> dict:
     """
     Load labels from csv file
 
     :param csv_fp: csv label file path
+    :param to_int: whether to convert image id to int
     :return: dict of labels
     """
     with open(csv_fp, mode="r") as f:
         reader = csv.reader(f)
         _ = next(reader)  # skip header
         # Note that file extension is removed
-        return {int(row[0][:-4]): int(row[1]) for row in reader}
+        if to_int:
+            return {int(row[0][:-4]): int(row[1]) for row in reader}
+        else:
+            return {row[0]: int(row[1]) for row in reader}
 
 
 class CSVMMAPDataset(Dataset):
