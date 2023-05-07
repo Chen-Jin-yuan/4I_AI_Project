@@ -9,7 +9,7 @@ from torchmetrics import Accuracy, CohenKappa
 
 # 定义 lightning 模型
 class Inception_V3(pl.LightningModule):
-    def __init__(self, lr=0.001, model_path=None):
+    def __init__(self, lr=0.001):
         super().__init__()
         self.num_classes = 3
         self.lr = lr
@@ -25,24 +25,16 @@ class Inception_V3(pl.LightningModule):
         self.test_acc = Accuracy(task='multiclass', num_classes=self.num_classes)
         self.test_k = CohenKappa(task='multiclass', weights='quadratic', num_classes=self.num_classes)
 
-        # 加载模型
-        if model_path != None:
-            if os.path.exists(model_path):
-                # 加载本地保存的模型
-                self.model = torch.load(model_path)
-            else:
-                print("[error]: not find path of model!")
-        else:
-            # 加载预训练模型
-            self.model = torchvision.models.inception_v3(weights=torchvision.models.Inception_V3_Weights)
+        # 加载预训练模型
+        self.model = torchvision.models.inception_v3(weights=torchvision.models.Inception_V3_Weights)
 
-            # # 如果要冻结参数
-            # for param in model.parameters():
-            #     param.requires_grad = False
+        # # 如果要冻结参数
+        # for param in model.parameters():
+        #     param.requires_grad = False
 
-            # 替换全连接层
-            num_ftrs = self.model.fc.in_features
-            self.model.fc = nn.Linear(num_ftrs, self.num_classes)
+        # 替换全连接层
+        num_ftrs = self.model.fc.in_features
+        self.model.fc = nn.Linear(num_ftrs, self.num_classes)
 
     def loss_fn(self, y_hat, y):
         """ Loss function wrapper for lazy initialization. """
