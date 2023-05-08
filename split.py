@@ -17,7 +17,7 @@ def split(src_csv: str, train_csv: str, val_csv: str, ratio: float = 0.8, seed: 
     val_items = labels[train_len:]
 
     for set_fp, set_items in [(train_csv, train_items), (val_csv, val_items)]:
-        with open(set_fp, "w") as f:
+        with open(set_fp, "w", newline="") as f:
             wt = csv.writer(f)
             wt.writerow(["image name", "image quality level"])
             for k, v in set_items:
