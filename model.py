@@ -23,9 +23,14 @@ class Inception_V3(pl.LightningModule):
         # 加载预训练模型
         self.model = torchvision.models.inception_v3(weights=torchvision.models.Inception_V3_Weights.IMAGENET1K_V1)
 
-        # # 如果要冻结参数
-        # for param in model.parameters():
+        # 如果要冻结参数
+        # self.frozen = 3
+        # fro_num = 0
+        # for param in self.model.parameters():
         #     param.requires_grad = False
+        #     fro_num = fro_num + 1
+        #     if fro_num == self.frozen:
+        #         break
 
         # 替换全连接层
         num_ftrs = self.model.fc.in_features
